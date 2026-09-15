@@ -2,6 +2,7 @@ import subprocess
 from collections import defaultdict, deque
 from pyvis.network import Network
 import random
+import re
 
 # -----------------------------
 # Format LDEV HEX value to 0x0000
@@ -54,16 +55,14 @@ def parse_host_grps(horcm_id):
             hba_wwn = wwn_parts[3]
             wwns_of_a_host_grp.append(hba_wwn)
 
-        if gid != 0:
+        if (gid != 0) and (not re.search(r"dummy", group_name, re.IGNORECASE)):
             results.append({
                 "port": port_name,
-                # "gid": gid,
                 "group_name": group_name,
                 "serial_number": serial_number,
                 "ldevs": ldevs_of_a_host_grp,
                 "wwns": wwns_of_a_host_grp
             })
-
     return results
 
 
@@ -163,21 +162,31 @@ def get_shared_components(hg1, hg2):
 # Visualization using PyVis
 # -----------------------------
 def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
-    # If more than 20 items → split into pages
-    if len(host_groups) > 20:
-        page_size = 20
-        for page_num in range(0, len(host_groups), page_size):
-            chunk = host_groups[page_num:page_num + page_size]
-            page_file = f"host_groups_page_{page_num // page_size + 1}.html"
-            visualize_host_groups(chunk, page_file)
-        print(f"Split into multiple pages of 20 items each.")
+    # ---------------------------------------------------------
+    # 1. Split by clusters (group_id), NOT by count
+    # ---------------------------------------------------------
+    group_ids = sorted(set(hg["group_id"] for hg in host_groups))
+
+    # If more than one cluster exists → generate one page per cluster
+    if len(group_ids) > 1:
+        for gid in group_ids:
+            cluster_items = [hg for hg in host_groups if hg["group_id"] == gid]
+            page_file = f"cluster_{gid}.html"
+            visualize_host_groups(cluster_items, page_file)
+        print(f"Split into {len(group_ids)} cluster pages.")
         return
 
-    # Normal single-page behavior below
+    # ---------------------------------------------------------
+    # 2. Normal single-cluster behavior below
+    # ---------------------------------------------------------
     net = Network(height="900px", width="100%", bgcolor="#1e1e1e", font_color="white")
-    net.force_atlas_2based()
 
-    # Add nodes
+    # Physics engine (Barnes–Hut recommended for large clusters)
+    net.barnes_hut()
+
+    # ---------------------------------------------------------
+    # 3. Add nodes
+    # ---------------------------------------------------------
     for i, hg in enumerate(host_groups):
         label = (
             f"{hg['group_name']}\n"
@@ -185,6 +194,7 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
             f"Serial: {hg['serial_number']}\n"
             f"Group: {hg['group_id']}"
         )
+
         title = (
             f"{hg['group_name']} | "
             f"Port: {hg['port']} | "
@@ -197,7 +207,9 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
         color = "#{:06x}".format(random.randint(0, 0xFFFFFF))
         net.add_node(i, label=label, title=title, color=color)
 
-    # Add edges
+    # ---------------------------------------------------------
+    # 4. Add edges
+    # ---------------------------------------------------------
     for i, hg1 in enumerate(host_groups):
         for j, hg2 in enumerate(host_groups):
             if i >= j:
@@ -215,10 +227,14 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
                     font={"size": 10}
                 )
 
-    # Write base HTML
+    # ---------------------------------------------------------
+    # 5. Write base HTML
+    # ---------------------------------------------------------
     net.write_html(output_file)
 
-    # Inject interactive controls
+    # ---------------------------------------------------------
+    # 6. Inject interactive controls (your full panel)
+    # ---------------------------------------------------------
     controls_html = """
     <style>
     input[type=range] {
@@ -306,6 +322,7 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
         f.write(controls_html)
 
     print(f"Graph saved to {output_file} with interactive controls")
+
 
 
 
