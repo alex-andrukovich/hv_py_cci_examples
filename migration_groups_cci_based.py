@@ -234,7 +234,9 @@ def print_groups(host_groups):
                 shared = get_shared_components(hg1, hg2)
                 if shared:
                     printed_any = True
-                    print(f"    * {hg1['group_name']} ↔ {hg2['group_name']}")
+                    print(f"    * {hg1['group_name']} (serial {hg1['serial_number']}) ↔ "
+                          f"{hg2['group_name']} (serial {hg2['serial_number']})")
+
                     if shared["wwns"]:
                         print(f"        WWN:  {', '.join(shared['wwns'])}")
                     if shared["ldevs"]:
