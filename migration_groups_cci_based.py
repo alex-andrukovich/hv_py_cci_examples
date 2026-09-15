@@ -145,11 +145,11 @@ def get_shared_components(hg1, hg2):
 
     # Color coding for visualization
     if shared_wwns and shared_ldevs:
-        color = "#ff6ff0"  # neon pink-purple
+        color = "#9d4edd"  # nebula violet
     elif shared_wwns:
-        color = "#4dd9ff"  # bright cyan
+        color = "#4cc9f0"  # electric blue starfield
     else:
-        color = "#ff8c42"  # warm orange
+        color = "#f72585"  # magenta nebula core
 
     return {
         "wwns": shared_wwns,
@@ -175,20 +175,18 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
             f"Group: {hg['group_id']}"
         )
         title = (
-            f"<b>{hg['group_name']}</b><br>"
-            f"Port: {hg['port']}<br>"
-            f"Serial: {hg['serial_number']}<br>"
-            f"WWNs: {', '.join(hg['wwns']) or 'None'}<br>"
-            f"LDEVs: {', '.join(format_ldev(x) for x in hg['ldevs']) or 'None'}<br>"
+            f"{hg['group_name']} | "
+            f"Port: {hg['port']} | "
+            f"Serial: {hg['serial_number']} | "
+            f"WWNs: {', '.join(hg['wwns']) or 'None'} | "
+            f"LDEVs: {', '.join(format_ldev(x) for x in hg['ldevs']) or 'None'} | "
             f"Group ID: {hg['group_id']}"
         )
 
-
         color = "#{:06x}".format(random.randint(0, 0xFFFFFF))
-
         net.add_node(i, label=label, title=title, color=color)
 
-    # Add edges using shared helper
+    # Add edges
     for i, hg1 in enumerate(host_groups):
         for j, hg2 in enumerate(host_groups):
             if i >= j:
@@ -206,8 +204,108 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
                     font={"size": 10}
                 )
 
+    # Write base HTML
     net.write_html(output_file)
-    print(f"Graph saved to {output_file}")
+
+    # Inject interactive controls
+    controls_html = """
+    <style>
+    /* Slider track */
+    input[type=range] {
+        -webkit-appearance: none;
+        width: 150px;
+        height: 6px;
+        background: #ff69b4; /* Hello Kitty pink */
+        border-radius: 5px;
+        outline: none;
+    }
+
+    /* Slider thumb (Chrome/Edge/Safari) */
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 18px;
+        width: 18px;
+        background: #ffffff;
+        border: 2px solid #ff1493; /* deeper pink */
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    /* Slider thumb (Firefox) */
+    input[type=range]::-moz-range-thumb {
+        height: 18px;
+        width: 18px;
+        background: #ffffff;
+        border: 2px solid #ff1493;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    /* Slider track (Firefox) */
+    input[type=range]::-moz-range-track {
+        background: #ff69b4;
+        height: 6px;
+        border-radius: 5px;
+    }
+    </style>
+
+    <div style="position:absolute; top:10px; left:10px; background:#222; padding:15px; color:white; z-index:9999; border-radius:8px;">
+        <h3 style="margin-top:0;">Graph Controls</h3>
+
+        <label>Node Color:</label>
+        <input type="color" id="nodeColorPicker" value="#FF69B4">
+        <button onclick="applyNodeColor()">Apply</button>
+        <br><br>
+
+        <label>Node Size:</label>
+        <input type="range" id="nodeSizeSlider" min="5" max="50" value="15">
+        <button onclick="applyNodeSize()">Apply</button>
+        <br><br>
+
+        <label>Edge Width:</label>
+        <input type="range" id="edgeWidthSlider" min="1" max="10" value="2">
+        <button onclick="applyEdgeWidth()">Apply</button>
+        <br><br>
+
+        <button onclick="network.setOptions({ physics: { enabled: false } })">Disable Physics</button>
+        <button onclick="network.setOptions({ physics: { enabled: true } })">Enable Physics</button>
+        <br><br>
+
+        <button onclick="network.setOptions({ physics: { solver: 'barnesHut' } })">Barnes-Hut</button>
+        <button onclick="network.setOptions({ physics: { solver: 'forceAtlas2Based' } })">ForceAtlas2</button>
+        <button onclick="network.setOptions({ physics: { solver: 'repulsion' } })">Repulsion</button>
+    </div>
+
+    <script>
+    function applyNodeColor() {
+        let color = document.getElementById("nodeColorPicker").value;
+        nodes.forEach(function(n) {
+            nodes.update({ id: n.id, color: { background: color } });
+        });
+    }
+
+    function applyNodeSize() {
+        let size = parseInt(document.getElementById("nodeSizeSlider").value);
+        nodes.forEach(function(n) {
+            nodes.update({ id: n.id, size: size });
+        });
+    }
+
+    function applyEdgeWidth() {
+        let width = parseInt(document.getElementById("edgeWidthSlider").value);
+        edges.forEach(function(e) {
+            edges.update({ id: e.id, width: width });
+        });
+    }
+    </script>
+    """
+
+    # Append controls to HTML
+    with open(output_file, "a") as f:
+        f.write(controls_html)
+
+    print(f"Graph saved to {output_file} with interactive controls")
+
 
 
 # -----------------------------
@@ -274,8 +372,11 @@ storage_b = {
 }
 
 all_host_grps = []
-all_host_grps += parse_host_grps(storage_a['horcm_id'])
-all_host_grps += parse_host_grps(storage_b['horcm_id'])
+# all_host_grps += parse_host_grps(storage_a['horcm_id'])
+# all_host_grps += parse_host_grps(storage_b['horcm_id'])
+
+all_host_grps = [{'port': 'CL1-A', 'group_name': 'cluster1@site_one', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff01']}, {'port': 'CL1-A', 'group_name': 'cluster1@site_two', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff03']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_one', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb01']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_two', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb03']}, {'port': 'CL1-A', 'group_name': 'cluster3@site_one', 'serial_number': '800001', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['ff11bb11bb11bb01', 'ff11bb11bb11bb02', 'ff11bb11bb11bb03', 'ff11bb11bb11bb04', 'ff11bb11bb11bb05', 'ff22bb11bb11bb01', 'ff22bb11bb11bb02', 'ff22bb11bb11bb03', 'ff22bb11bb11bb04', 'ff22bb11bb11bb05']}, {'port': 'CL1-A', 'group_name': 'pknsql5x@rotem', 'serial_number': '800001', 'ldevs': [], 'wwns': ['51402ec001c95278']}, {'port': 'CL1-A', 'group_name': 'test_alex_856', 'serial_number': '800001', 'ldevs': [136, 137, 138], 'wwns': ['1100110011001100']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_one', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff02']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_two', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff04']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_one', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb02']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_two', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb04']}, {'port': 'CL2-A', 'group_name': 'cluster3@site_one', 'serial_number': '800001', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['aa11bb11bb11bb01', 'aa11bb11bb11bb02', 'aa11bb11bb11bb03', 'aa11bb11bb11bb04', 'aa11bb11bb11bb05', 'aa22bb11bb11bb01', 'aa22bb11bb11bb02', 'aa22bb11bb11bb03', 'aa22bb11bb11bb04', 'aa22bb11bb11bb05']}, {'port': 'CL2-A', 'group_name': 'test_alex_856', 'serial_number': '800001', 'ldevs': [137, 138], 'wwns': ['1100110011001100']}, {'port': 'CL7-A', 'group_name': 'alex_test_gad', 'serial_number': '800001', 'ldevs': [200], 'wwns': []}, {'port': 'CL1-A', 'group_name': 'cluster1@site_one', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff01']}, {'port': 'CL1-A', 'group_name': 'cluster1@site_two', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff03']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_one', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb01']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_two', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb03']}, {'port': 'CL1-A', 'group_name': 'cluster3@site_one', 'serial_number': '800002', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['ff11bb11bb11bb01', 'ff11bb11bb11bb02', 'ff11bb11bb11bb03', 'ff11bb11bb11bb04', 'ff11bb11bb11bb05', 'ff22bb11bb11bb01', 'ff22bb11bb11bb02', 'ff22bb11bb11bb03', 'ff22bb11bb11bb04', 'ff22bb11bb11bb05']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_one', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff02']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_two', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff04']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_one', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb02']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_two', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb04']}, {'port': 'CL2-A', 'group_name': 'cluster3@site_one', 'serial_number': '800002', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['aa11bb11bb11bb01', 'aa11bb11bb11bb02', 'aa11bb11bb11bb03', 'aa11bb11bb11bb04', 'aa11bb11bb11bb05', 'aa22bb11bb11bb01', 'aa22bb11bb11bb02', 'aa22bb11bb11bb03', 'aa22bb11bb11bb04', 'aa22bb11bb11bb05']}, {'port': 'CL7-A', 'group_name': 'alex_test_gad', 'serial_number': '800002', 'ldevs': [200], 'wwns': []}]
+
 
 print(all_host_grps)
 host_groups_with_ids = assign_group_ids(all_host_grps)
