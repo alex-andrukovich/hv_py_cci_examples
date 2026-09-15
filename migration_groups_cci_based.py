@@ -278,3 +278,9 @@ print(all_host_grps)
 host_groups_with_ids = assign_group_ids(all_host_grps)
 print_groups(host_groups_with_ids)
 visualize_host_groups(host_groups_with_ids)
+
+
+sorted_hgs = sorted(host_groups_with_ids, key=lambda x: x["group_id"])
+print("\n=== All Host Groups (sorted by group_id) ===")
+for hg in sorted_hgs:
+    print(hg)
