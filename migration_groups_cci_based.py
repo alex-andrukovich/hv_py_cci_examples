@@ -163,8 +163,19 @@ def get_shared_components(hg1, hg2):
 # Visualization using PyVis
 # -----------------------------
 def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
+    # If more than 20 items → split into pages
+    if len(host_groups) > 20:
+        page_size = 20
+        for page_num in range(0, len(host_groups), page_size):
+            chunk = host_groups[page_num:page_num + page_size]
+            page_file = f"host_groups_page_{page_num // page_size + 1}.html"
+            visualize_host_groups(chunk, page_file)
+        print(f"Split into multiple pages of 20 items each.")
+        return
+
+    # Normal single-page behavior below
     net = Network(height="900px", width="100%", bgcolor="#1e1e1e", font_color="white")
-    net.barnes_hut()
+    net.force_atlas_2based()
 
     # Add nodes
     for i, hg in enumerate(host_groups):
@@ -210,28 +221,23 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
     # Inject interactive controls
     controls_html = """
     <style>
-    /* Slider track */
     input[type=range] {
         -webkit-appearance: none;
         width: 150px;
         height: 6px;
-        background: #ff69b4; /* Hello Kitty pink */
+        background: #ff69b4;
         border-radius: 5px;
         outline: none;
     }
-
-    /* Slider thumb (Chrome/Edge/Safari) */
     input[type=range]::-webkit-slider-thumb {
         -webkit-appearance: none;
         height: 18px;
         width: 18px;
         background: #ffffff;
-        border: 2px solid #ff1493; /* deeper pink */
+        border: 2px solid #ff1493;
         border-radius: 50%;
         cursor: pointer;
     }
-
-    /* Slider thumb (Firefox) */
     input[type=range]::-moz-range-thumb {
         height: 18px;
         width: 18px;
@@ -240,8 +246,6 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
         border-radius: 50%;
         cursor: pointer;
     }
-
-    /* Slider track (Firefox) */
     input[type=range]::-moz-range-track {
         background: #ff69b4;
         height: 6px;
@@ -283,14 +287,12 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
             nodes.update({ id: n.id, color: { background: color } });
         });
     }
-
     function applyNodeSize() {
         let size = parseInt(document.getElementById("nodeSizeSlider").value);
         nodes.forEach(function(n) {
             nodes.update({ id: n.id, size: size });
         });
     }
-
     function applyEdgeWidth() {
         let width = parseInt(document.getElementById("edgeWidthSlider").value);
         edges.forEach(function(e) {
@@ -300,11 +302,11 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
     </script>
     """
 
-    # Append controls to HTML
     with open(output_file, "a") as f:
         f.write(controls_html)
 
     print(f"Graph saved to {output_file} with interactive controls")
+
 
 
 
@@ -372,10 +374,8 @@ storage_b = {
 }
 
 all_host_grps = []
-# all_host_grps += parse_host_grps(storage_a['horcm_id'])
-# all_host_grps += parse_host_grps(storage_b['horcm_id'])
-
-all_host_grps = [{'port': 'CL1-A', 'group_name': 'cluster1@site_one', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff01']}, {'port': 'CL1-A', 'group_name': 'cluster1@site_two', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff03']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_one', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb01']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_two', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb03']}, {'port': 'CL1-A', 'group_name': 'cluster3@site_one', 'serial_number': '800001', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['ff11bb11bb11bb01', 'ff11bb11bb11bb02', 'ff11bb11bb11bb03', 'ff11bb11bb11bb04', 'ff11bb11bb11bb05', 'ff22bb11bb11bb01', 'ff22bb11bb11bb02', 'ff22bb11bb11bb03', 'ff22bb11bb11bb04', 'ff22bb11bb11bb05']}, {'port': 'CL1-A', 'group_name': 'pknsql5x@rotem', 'serial_number': '800001', 'ldevs': [], 'wwns': ['51402ec001c95278']}, {'port': 'CL1-A', 'group_name': 'test_alex_856', 'serial_number': '800001', 'ldevs': [136, 137, 138], 'wwns': ['1100110011001100']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_one', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff02']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_two', 'serial_number': '800001', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff04']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_one', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb02']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_two', 'serial_number': '800001', 'ldevs': [], 'wwns': ['ee11bb11bb11bb04']}, {'port': 'CL2-A', 'group_name': 'cluster3@site_one', 'serial_number': '800001', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['aa11bb11bb11bb01', 'aa11bb11bb11bb02', 'aa11bb11bb11bb03', 'aa11bb11bb11bb04', 'aa11bb11bb11bb05', 'aa22bb11bb11bb01', 'aa22bb11bb11bb02', 'aa22bb11bb11bb03', 'aa22bb11bb11bb04', 'aa22bb11bb11bb05']}, {'port': 'CL2-A', 'group_name': 'test_alex_856', 'serial_number': '800001', 'ldevs': [137, 138], 'wwns': ['1100110011001100']}, {'port': 'CL7-A', 'group_name': 'alex_test_gad', 'serial_number': '800001', 'ldevs': [200], 'wwns': []}, {'port': 'CL1-A', 'group_name': 'cluster1@site_one', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff01']}, {'port': 'CL1-A', 'group_name': 'cluster1@site_two', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff03']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_one', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb01']}, {'port': 'CL1-A', 'group_name': 'cluster2@site_two', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb03']}, {'port': 'CL1-A', 'group_name': 'cluster3@site_one', 'serial_number': '800002', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['ff11bb11bb11bb01', 'ff11bb11bb11bb02', 'ff11bb11bb11bb03', 'ff11bb11bb11bb04', 'ff11bb11bb11bb05', 'ff22bb11bb11bb01', 'ff22bb11bb11bb02', 'ff22bb11bb11bb03', 'ff22bb11bb11bb04', 'ff22bb11bb11bb05']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_one', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff02']}, {'port': 'CL2-A', 'group_name': 'cluster1@site_two', 'serial_number': '800002', 'ldevs': [100, 101], 'wwns': ['ff00ff00ff00ff04']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_one', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb02']}, {'port': 'CL2-A', 'group_name': 'cluster2@site_two', 'serial_number': '800002', 'ldevs': [], 'wwns': ['ee11bb11bb11bb04']}, {'port': 'CL2-A', 'group_name': 'cluster3@site_one', 'serial_number': '800002', 'ldevs': [102, 103, 104, 105, 106], 'wwns': ['aa11bb11bb11bb01', 'aa11bb11bb11bb02', 'aa11bb11bb11bb03', 'aa11bb11bb11bb04', 'aa11bb11bb11bb05', 'aa22bb11bb11bb01', 'aa22bb11bb11bb02', 'aa22bb11bb11bb03', 'aa22bb11bb11bb04', 'aa22bb11bb11bb05']}, {'port': 'CL7-A', 'group_name': 'alex_test_gad', 'serial_number': '800002', 'ldevs': [200], 'wwns': []}]
+all_host_grps += parse_host_grps(storage_a['horcm_id'])
+all_host_grps += parse_host_grps(storage_b['horcm_id'])
 
 
 print(all_host_grps)
@@ -383,8 +383,17 @@ host_groups_with_ids = assign_group_ids(all_host_grps)
 print_groups(host_groups_with_ids)
 visualize_host_groups(host_groups_with_ids)
 
-
 sorted_hgs = sorted(host_groups_with_ids, key=lambda x: x["group_id"])
 print("\n=== All Host Groups (sorted by group_id) ===")
-for hg in sorted_hgs:
-    print(hg)
+
+with open("sorted_host_groups.txt", "w") as f:
+    f.write("=== All Host Groups (sorted by group_id) ===\n")
+
+    for hg in sorted_hgs:
+        formatted = {
+            **hg,
+            "ldevs": [format_ldev(x) for x in hg["ldevs"]]
+        }
+
+        print(formatted)                     # console output
+        f.write(str(formatted) + "\n")       # file output
