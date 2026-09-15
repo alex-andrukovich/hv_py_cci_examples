@@ -1,7 +1,7 @@
 import subprocess
 from collections import defaultdict, deque
 from pyvis.network import Network
-
+import random
 
 # -----------------------------
 # Format LDEV HEX value to 0x0000
@@ -145,11 +145,11 @@ def get_shared_components(hg1, hg2):
 
     # Color coding for visualization
     if shared_wwns and shared_ldevs:
-        color = "#cc33ff"   # purple
+        color = "#ff6ff0"  # neon pink-purple
     elif shared_wwns:
-        color = "#3399ff"   # blue
+        color = "#4dd9ff"  # bright cyan
     else:
-        color = "#ff3333"   # red
+        color = "#ff8c42"  # warm orange
 
     return {
         "wwns": shared_wwns,
@@ -183,7 +183,9 @@ def visualize_host_groups(host_groups, output_file="host_groups_graph.html"):
             f"Group ID: {hg['group_id']}"
         )
 
-        color = f"#{hex(20000 + hg['group_id'] * 5000)[2:]}"
+
+        color = "#{:06x}".format(random.randint(0, 0xFFFFFF))
+
         net.add_node(i, label=label, title=title, color=color)
 
     # Add edges using shared helper
@@ -274,6 +276,7 @@ storage_b = {
 all_host_grps = []
 all_host_grps += parse_host_grps(storage_a['horcm_id'])
 all_host_grps += parse_host_grps(storage_b['horcm_id'])
+
 print(all_host_grps)
 host_groups_with_ids = assign_group_ids(all_host_grps)
 print_groups(host_groups_with_ids)
